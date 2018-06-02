@@ -216,6 +216,7 @@ def test(dataset_root_dir: str):
             cur_accuracy = (100 * correct / total)
             print('Accuracy of the network on the ' + type + ' set with ' + str(total) + ' test images: %d %%' % cur_accuracy)
 
+        torch.save(net.state_dict(), './model-frozen-{}'.format(epoch))
 
     print('Finished Training')
 
