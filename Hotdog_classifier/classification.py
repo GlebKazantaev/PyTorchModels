@@ -112,7 +112,7 @@ class ToTensor(object):
         return {'image': torch.from_numpy(image.transpose((2, 0, 1))), 'label': label}
 
 
-def test(dataset_root_dir: str):
+def test(dataset_root_dir: str, restore_model: str):
     """ """
 
     """
@@ -163,6 +163,10 @@ def test(dataset_root_dir: str):
 
     net = Net()
     net = net.to(device)
+
+    if restore_model is not None:
+        net.load_state_dict(torch.load(restore_model))
+        print("Model {} restored".format(restore_model))
 
     """
         SETUP LOSS FUNCTION
@@ -356,5 +360,6 @@ def main():
 
 
 if __name__ == "__main__":
-    test(sys.argv[1])
+    restore_model = sys.argv[2] if len(sys.argv) > 2 else None
+    test(sys.argv[1], restore_model)
     #main()
