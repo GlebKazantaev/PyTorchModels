@@ -1,5 +1,5 @@
 #import cv2
-import torchvision
+#import torchvision
 import os
 import torch
 import pandas as pd
@@ -11,6 +11,7 @@ from torchvision import transforms, utils
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import sys
 
 from torch.utils.data import Dataset
 
@@ -111,19 +112,19 @@ class ToTensor(object):
         return {'image': torch.from_numpy(image.transpose((2, 0, 1))), 'label': label}
 
 
-def test():
+def test(dataset_root_dir: str):
     """ """
 
     """
         LOAD TRAIN & TEST DATASETS 
     """
-    hot_dog_dataset_train = HotDogsDataset(train=True, root_dir='C:\Work\DL\datasets\hot_dog\\', transform=transforms.Compose([
+    hot_dog_dataset_train = HotDogsDataset(train=True, root_dir=dataset_root_dir, transform=transforms.Compose([
                                                Rescale((32, 32)),#Rescale((256,256)),
                                                ToTensor()
                                            ]))
     train_dataloader = DataLoader(hot_dog_dataset_train, batch_size=4, shuffle=True, num_workers=1)
 
-    hot_dog_dataset_test = HotDogsDataset(train=False, root_dir='C:\Work\DL\datasets\hot_dog\\', transform=transforms.Compose([
+    hot_dog_dataset_test = HotDogsDataset(train=False, root_dir=dataset_root_dir, transform=transforms.Compose([
                                                Rescale((32, 32)),#Rescale((256,256)),
                                                ToTensor()
                                            ]))
@@ -339,5 +340,5 @@ def main():
 
 
 if __name__ == "__main__":
-    test()
+    test(sys.argv[1])
     #main()
