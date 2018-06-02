@@ -119,13 +119,13 @@ def test(dataset_root_dir: str):
         LOAD TRAIN & TEST DATASETS 
     """
     hot_dog_dataset_train = HotDogsDataset(train=True, root_dir=dataset_root_dir, transform=transforms.Compose([
-                                               Rescale((32, 32)),#Rescale((256,256)),
+                                               Rescale((256,256)),
                                                ToTensor()
                                            ]))
     train_dataloader = DataLoader(hot_dog_dataset_train, batch_size=4, shuffle=True, num_workers=1)
 
     hot_dog_dataset_test = HotDogsDataset(train=False, root_dir=dataset_root_dir, transform=transforms.Compose([
-                                               Rescale((32, 32)),#Rescale((256,256)),
+                                               Rescale((256,256)),
                                                ToTensor()
                                            ]))
     test_dataloader = DataLoader(hot_dog_dataset_test, batch_size=4, shuffle=True, num_workers=4)
@@ -141,21 +141,21 @@ def test(dataset_root_dir: str):
     class Net(nn.Module):
         def __init__(self):
             super(Net, self).__init__()
-            self.conv1 = nn.Conv2d(3, 16, 5)
-            self.conv2 = nn.Conv2d(16, 32, 3)
+            self.conv1 = nn.Conv2d(3, 16, 3)
+            self.conv2 = nn.Conv2d(16, 32, 3, padding=1)
             self.conv3 = nn.Conv2d(32, 64, 3)
 
             self.pool = nn.MaxPool2d(2, 2)
 
-            self.fc1 = nn.Linear(64 *  10 * 10, 220)
-            self.fc2 = nn.Linear(220, 100)
+            self.fc1 = nn.Linear(64 * 61 * 61, 1220)
+            self.fc2 = nn.Linear(1220, 100)
             self.fc3 = nn.Linear(100, 2)
 
         def forward(self, x):
             x = self.pool(F.relu(self.conv1(x)))
-            x = F.relu(self.conv2(x))
+            x = self.pool(F.relu(self.conv2(x)))
             x = F.relu(self.conv3(x))
-            x = x.view(-1, 64 * 10 * 10)
+            x = x.view(-1, 64 * 61 * 61)
             x = F.relu(self.fc1(x))
             x = F.relu(self.fc2(x))
             x = self.fc3(x)
@@ -193,6 +193,7 @@ def test(dataset_root_dir: str):
             optimizer.step()
 
             # print statistics
+            print('.', end='')
             running_loss += loss.item()
             if i % 100 == 99:    # print every 100 mini-batches
                 print('[%d, %5d] loss: %.3f' %
@@ -212,7 +213,7 @@ def test(dataset_root_dir: str):
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
         cur_accuracy = (100 * correct / total)
-        print('Accuracy of the network on the ' + str(total) + ' test images: %d %%' % cur_accuracy)
+        print('Accuracy of the network on the train set with ' + str(total) + ' test images: %d %%' % cur_accuracy)
         if last_accuracy is None:
             last_accuracy = cur_accuracy
         else:
