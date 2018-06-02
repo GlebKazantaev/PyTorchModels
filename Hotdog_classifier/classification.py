@@ -133,6 +133,9 @@ def test(dataset_root_dir: str):
     """
         SETUP CNN MODEL
     """
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print("DEVICE WILL BE USED: ", device)
+
     classes = ('not hotdog', 'hotdog')
 
     class Net(nn.Module):
@@ -159,7 +162,7 @@ def test(dataset_root_dir: str):
             return x
 
     net = Net()
-    net = net.float()
+    net = net.to(device)
 
     """
         SETUP LOSS FUNCTION
@@ -170,11 +173,15 @@ def test(dataset_root_dir: str):
     """
         START TRAINING
     """
-    for epoch in range(30):  # loop over the dataset multiple times
+    last_accuracy = None
+    epoch = 0
+    #for epoch in range(1):  # loop over the dataset multiple times
+    while True:
         running_loss = 0.0
         for i, data in enumerate(train_dataloader, 0):
             # get the inputs
             inputs, labels = data['image'].float(), data['label']
+            inputs, labels = inputs.to(device), labels.to(device)
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -191,6 +198,27 @@ def test(dataset_root_dir: str):
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, i + 1, running_loss / 100))
                 running_loss = 0.0
+        epoch += 1
+
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for data in test_dataloader:
+                images, labels = data['image'].float(), data['label'].long().view(4)
+                images, labels = images.to(device), labels.to(device)
+
+                outputs = net(images)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+        cur_accuracy = (100 * correct / total)
+        print('Accuracy of the network on the ' + str(total) + ' test images: %d %%' % cur_accuracy)
+        if last_accuracy is None:
+            last_accuracy = cur_accuracy
+        else:
+            if last_accuracy - cur_accuracy > 10:
+                break
+
     print('Finished Training')
 
     """
@@ -207,17 +235,6 @@ def test(dataset_root_dir: str):
     #print('Predicted: ', ' '.join('%5s, ' % classes[predicted[j]] for j in range(4)))
     #plt.pause(1e9)
 
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for data in test_dataloader:
-            images, labels = data['image'].float(), data['label'].long().view(4)
-            outputs = net(images)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-
-    print('Accuracy of the network on the ' + str(total) + ' test images: %d %%' % (100 * correct / total))
 
 def main():
     transform = transforms.Compose(
