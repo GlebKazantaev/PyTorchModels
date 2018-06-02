@@ -201,24 +201,21 @@ def test(dataset_root_dir: str):
                 running_loss = 0.0
         epoch += 1
 
-        correct = 0
-        total = 0
-        with torch.no_grad():
-            for data in test_dataloader:
-                images, labels = data['image'].float(), data['label'].long().view(4)
-                images, labels = images.to(device), labels.to(device)
+        for dl, type in zip([test_dataloader, train_dataloader], ['test', 'train']):
+            correct = 0
+            total = 0
+            with torch.no_grad():
+                for data in dl:
+                    images, labels = data['image'].float(), data['label'].long().view(4)
+                    images, labels = images.to(device), labels.to(device)
 
-                outputs = net(images)
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-        cur_accuracy = (100 * correct / total)
-        print('Accuracy of the network on the train set with ' + str(total) + ' test images: %d %%' % cur_accuracy)
-        if last_accuracy is None:
-            last_accuracy = cur_accuracy
-        else:
-            if last_accuracy - cur_accuracy > 10:
-                break
+                    outputs = net(images)
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += labels.size(0)
+                    correct += (predicted == labels).sum().item()
+            cur_accuracy = (100 * correct / total)
+            print('Accuracy of the network on the ' + type + ' set with ' + str(total) + ' test images: %d %%' % cur_accuracy)
+
 
     print('Finished Training')
 
