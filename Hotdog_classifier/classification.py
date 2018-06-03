@@ -4,6 +4,7 @@ import os
 import torch
 import pandas as pd
 from skimage import io, transform
+import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
@@ -359,7 +360,102 @@ def main():
             classes[i], 100 * class_correct[i] / class_total[i]))
 
 
+def vgg_train(dataset_root_dir: str, restore_model: str):
+    """ """
+
+    """
+        LOAD TRAIN & TEST DATASETS 
+    """
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                     std=[0.229, 0.224, 0.225])
+
+    hot_dog_dataset_train = HotDogsDataset(train=True, root_dir=dataset_root_dir, transform=transforms.Compose([
+        Rescale((224, 224)), #normalize,
+        ToTensor(),
+    ]))
+    train_dataloader = DataLoader(hot_dog_dataset_train, batch_size=4, shuffle=True, num_workers=1)
+
+    hot_dog_dataset_test = HotDogsDataset(train=False, root_dir=dataset_root_dir, transform=transforms.Compose([
+        Rescale((224, 224)), #normalize,
+        ToTensor(),
+    ]))
+    test_dataloader = DataLoader(hot_dog_dataset_test, batch_size=4, shuffle=True, num_workers=4)
+
+    """
+        SETUP CNN MODEL
+    """
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print("DEVICE WILL BE USED: ", device)
+
+    classes = ('not hotdog', 'hotdog')
+
+    net = torchvision.models.vgg16_bn(True)
+    for param in net.parameters():
+        param.requiers_grad = False
+
+    #print(net)
+    net.classifier._modules['6'] = nn.Linear(4096, 2)
+
+    """
+        SETUP LOSS FUNCTION
+    """
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+
+    """
+        START TRAINING
+    """
+    last_accuracy = None
+    epoch = 0
+    # for epoch in range(1):  # loop over the dataset multiple times
+    while True:
+        running_loss = 0.0
+        for i, data in enumerate(train_dataloader, 0):
+            # get the inputs
+            inputs, labels = data['image'].float(), data['label']
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
+            outputs = net(inputs)
+            loss = criterion(outputs, labels.long().view(4))
+            loss.backward()
+            optimizer.step()
+
+            # print statistics
+            print('.', end='')
+            running_loss += loss.item()
+            if i % 100 == 99:  # print every 100 mini-batches
+                print('[%d, %5d] loss: %.3f' %
+                      (epoch + 1, i + 1, running_loss / 100))
+                running_loss = 0.0
+        epoch += 1
+
+        for dl, type in zip([test_dataloader, train_dataloader], ['test', 'train']):
+            correct = 0
+            total = 0
+            with torch.no_grad():
+                for data in dl:
+                    images, labels = data['image'].float(), data['label'].long().view(4)
+                    images, labels = images.to(device), labels.to(device)
+
+                    outputs = net(images)
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += labels.size(0)
+                    correct += (predicted == labels).sum().item()
+            cur_accuracy = (100 * correct / total)
+            print('Accuracy of the network on the ' + type + ' set with ' + str(
+                total) + ' test images: %d %%' % cur_accuracy)
+
+        torch.save(net.state_dict(), './model-frozen-{}'.format(epoch))
+
+    print('Finished Training')
+
+
 if __name__ == "__main__":
     restore_model = sys.argv[2] if len(sys.argv) > 2 else None
-    test(sys.argv[1], restore_model)
+    #test(sys.argv[1], restore_model)
     #main()
+    vgg_train(sys.argv[1], restore_model)
