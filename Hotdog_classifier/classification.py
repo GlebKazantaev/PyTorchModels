@@ -176,13 +176,13 @@ def simple_net(dataset_root_dir: str, restore_model: str):
             x = x.view(-1, 64 * 61 * 61)
             x = F.relu(self.fc1(x))
             x = F.relu(self.fc2(x))
-            x = self.fc3(x)
+            x = F.softmax(self.fc3(x), dim=0)
             return x
 
     net = Net()
     net = net.to(device)
 
-    if restore_model is not None:
+    if len(restore_model) > 0:
         net.load_state_dict(torch.load(restore_model))
         print("Model {} restored".format(restore_model))
 
@@ -302,12 +302,12 @@ def vgg_train(dataset_root_dir: str, restore_model: str, dump_to_onnx: str):
         param.requiers_grad = False
 
     net = net.to(device)
+
+    # if restore_model is not None:
+    #     net.load_state_dict(torch.load(restore_model, map_location={'cuda:0': 'cpu'}))
+    #     print("Model {} restored".format(restore_model))
+
     print(net)
-
-
-#    if restore_model is not None:
-#        net.load_state_dict(torch.load(restore_model, map_location={'cuda:0': 'cpu'}))
-#        print("Model {} restored".format(restore_model))
 
     if len(dump_to_onnx) > 0:
         from torch.autograd import Variable
@@ -376,4 +376,5 @@ def vgg_train(dataset_root_dir: str, restore_model: str, dump_to_onnx: str):
 
 if __name__ == "__main__":
     options, args = parser.parse_args()
-    vgg_train(options.dataset_path, options.restore_model, options.dump)
+    #vgg_train(options.dataset_path, options.restore_model, options.dump)
+    simple_net(options.dataset_path, options.restore_model)
