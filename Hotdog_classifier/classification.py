@@ -244,8 +244,8 @@ def simple_net(dataset_root_dir: str, restore_model: str):
                             correct += 1
 
                     #correct += (predicted == labels).sum().item()
-            cur_accuracy = (100 * correct / total)
-            print('Accuracy of the network on the ' + type + ' set with ' + str(total) + ' test images: %d %%' % cur_accuracy)
+            cur_accuracy = (100. * correct / float(total))
+            print('Accuracy of the network on the ' + type + ' set with ' + str(total) + ' test images: %f %%' % cur_accuracy)
 
         torch.save(net.state_dict(), './model-frozen-{}'.format(epoch))
 
@@ -265,6 +265,16 @@ def simple_net(dataset_root_dir: str, restore_model: str):
     #_, predicted = torch.max(outputs, 1)
     #print('Predicted: ', ' '.join('%5s, ' % classes[predicted[j]] for j in range(4)))
     #plt.pause(1e9)
+
+class VggNet(nn.Module):
+    def __init__(self, model):
+        super(VggNet, self).__init__()
+        self.vgg_model = model
+        self.vgg_model.classifier._modules['6'] = nn.Linear(4096, 2)
+
+    def forward(self, x):
+        x = self.vgg_model(x)
+        return x
 
 
 def vgg_train(dataset_root_dir: str, restore_model: str, dump_to_onnx: str):
@@ -296,17 +306,7 @@ def vgg_train(dataset_root_dir: str, restore_model: str, dump_to_onnx: str):
 
     classes = ('not hotdog', 'hotdog')
 
-    class Net(nn.Module):
-        def __init__(self, model):
-            super(Net, self).__init__()
-            self.vgg_model = model
-            self.vgg_model.classifier._modules['6'] = nn.Linear(4096, 2)
-
-        def forward(self, x):
-            x = self.vgg_model(x)
-            return x
-
-    net = Net(torchvision.models.vgg16_bn(True))
+    net = VggNet(torchvision.models.vgg16_bn(True))
     for param in list(net.parameters())[:-2]:
         param.requiers_grad = False
 
@@ -378,16 +378,74 @@ def vgg_train(dataset_root_dir: str, restore_model: str, dump_to_onnx: str):
                         if rid == labels[id]:
                             correct += 1
 
-            cur_accuracy = (100 * correct / total)
+            cur_accuracy = (100. * correct / float(total))
             print('Accuracy of the network on the ' + type + ' set with ' + str(
-                total) + ' test images: %d %%' % cur_accuracy)
+                total) + ' test images: %f %%' % cur_accuracy)
 
         torch.save(net.state_dict(), './model-frozen-{}'.format(epoch))
 
     print('Finished Training')
 
 
+def eval_model(dataset_root_dir, restore_model: str):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print("DEVICE WILL BE USED: ", device)
+
+    net = VggNet(torchvision.models.vgg16_bn(True))
+    net = net.to(device)
+
+    classes = ('not hotdog', 'hotdog')
+
+    if restore_model is not None and len(restore_model) > 0:
+        # original saved file with DataParallel
+        state_dict = torch.load(restore_model, map_location={'cuda:0': 'cpu'})
+        # create new OrderedDict that does not contain `module.`
+        from collections import OrderedDict
+        new_state_dict = OrderedDict()
+        for k, v in state_dict.items():
+            name = 'vgg_model.' + k
+            new_state_dict[name] = v
+
+        net.load_state_dict(new_state_dict)
+        print("Model {} restored".format(restore_model))
+    else:
+        print("ERROR: no restore model file found!")
+        return
+
+    hot_dog_dataset_test = HotDogsDataset(train=False, root_dir=dataset_root_dir, transform=transforms.Compose([
+        Rescale((224, 224)), #normalize,
+        ToTensor(),
+    ]))
+    test_dataloader = DataLoader(hot_dog_dataset_test, batch_size=4, shuffle=True, num_workers=4)
+
+
+    for dl, type in zip([test_dataloader], ['test']):
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for data in dl:
+                images, labels = data['image'].float(), data['label'].long().view(4)
+                images, labels = images.to(device), labels.to(device)
+
+                outputs = net(images)
+                total += labels.size(0)
+                for id, prediction in enumerate(outputs.data):
+                    res = torch.nn.functional.softmax(prediction, dim=0)
+                    _, rid = torch.max(res, 0)
+                    print('     result: {} reference: {} is {}'.format(rid, labels[id], "OK" if rid == labels[id] else "FAIL"))
+                    if rid == labels[id]:
+                        correct += 1
+
+                    imshow(torchvision.utils.make_grid(images[id]))
+                    #plt.imshow(images[id])
+                    plt.pause(1.1)
+
+        cur_accuracy = (100. * correct / float(total))
+        print('Accuracy of the network on the ' + type + ' set with ' + str(
+            total) + ' test images: %f %%' % cur_accuracy)
+
 if __name__ == "__main__":
     options, args = parser.parse_args()
     #vgg_train(options.dataset_path, options.restore_model, options.dump)
-    simple_net(options.dataset_path, options.restore_model)
+    #simple_net(options.dataset_path, options.restore_model)
+    eval_model(options.dataset_path, options.restore_model)
