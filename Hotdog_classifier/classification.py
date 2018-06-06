@@ -33,6 +33,10 @@ parser.add_option('-p', '--dataset_path',
     action="store", dest="dataset_path",
     help="Path to dataset root dif", default="")
 
+parser.add_option('-s', '--skip_training',
+    action="store_true", dest="skip_training",
+    help="Path to dataset root dif", default="")
+
 
 
 # fig = plt.figure()
@@ -165,8 +169,8 @@ def simple_net(dataset_root_dir: str, restore_model: str):
 
             self.pool = nn.MaxPool2d(2, 2)
 
-            self.fc1 = nn.Linear(64 * 61 * 61, 1220)
-            self.fc2 = nn.Linear(1220, 100)
+            self.fc1 = nn.Linear(64 * 61 * 61, 100)
+            self.fc2 = nn.Linear(100, 100)
             self.fc3 = nn.Linear(100, 2)
 
         def forward(self, x):
@@ -232,13 +236,19 @@ def simple_net(dataset_root_dir: str, restore_model: str):
                     images, labels = images.to(device), labels.to(device)
 
                     outputs = net(images)
-                    _, predicted = torch.nn.functional.softmax(outputs.data, dim=1)
                     total += labels.size(0)
-                    correct += (predicted == labels).sum().item()
+                    for id, prediction in enumerate(outputs.data):
+                        res = torch.nn.functional.softmax(prediction, dim=0)
+                        _, rid = torch.max(res, 0)
+                        if rid == labels[id]:
+                            correct += 1
+
+                    #correct += (predicted == labels).sum().item()
             cur_accuracy = (100 * correct / total)
             print('Accuracy of the network on the ' + type + ' set with ' + str(total) + ' test images: %d %%' % cur_accuracy)
 
         torch.save(net.state_dict(), './model-frozen-{}'.format(epoch))
+
 
     print('Finished Training')
 
@@ -361,9 +371,13 @@ def vgg_train(dataset_root_dir: str, restore_model: str, dump_to_onnx: str):
                     images, labels = images.to(device), labels.to(device)
 
                     outputs = net(images)
-                    _, predicted = torch.nn.functional.softmax(outputs.data, dim=1)
                     total += labels.size(0)
-                    correct += (predicted == labels).sum().item()
+                    for id, prediction in enumerate(outputs.data):
+                        res = torch.nn.functional.softmax(prediction, dim=0)
+                        _, rid = torch.max(res, 0)
+                        if rid == labels[id]:
+                            correct += 1
+
             cur_accuracy = (100 * correct / total)
             print('Accuracy of the network on the ' + type + ' set with ' + str(
                 total) + ' test images: %d %%' % cur_accuracy)
