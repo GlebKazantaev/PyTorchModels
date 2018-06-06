@@ -176,7 +176,7 @@ def simple_net(dataset_root_dir: str, restore_model: str):
             x = x.view(-1, 64 * 61 * 61)
             x = F.relu(self.fc1(x))
             x = F.relu(self.fc2(x))
-            x = F.softmax(self.fc3(x), dim=0)
+            x = self.fc3(x)
             return x
 
     net = Net()
@@ -232,7 +232,7 @@ def simple_net(dataset_root_dir: str, restore_model: str):
                     images, labels = images.to(device), labels.to(device)
 
                     outputs = net(images)
-                    _, predicted = torch.max(outputs.data, 1)
+                    _, predicted = torch.nn.functional.softmax(outputs.data, dim=1)
                     total += labels.size(0)
                     correct += (predicted == labels).sum().item()
             cur_accuracy = (100 * correct / total)
@@ -294,7 +294,6 @@ def vgg_train(dataset_root_dir: str, restore_model: str, dump_to_onnx: str):
 
         def forward(self, x):
             x = self.vgg_model(x)
-            x = F.softmax(x, dim=0)
             return x
 
     net = Net(torchvision.models.vgg16_bn(True))
@@ -362,7 +361,7 @@ def vgg_train(dataset_root_dir: str, restore_model: str, dump_to_onnx: str):
                     images, labels = images.to(device), labels.to(device)
 
                     outputs = net(images)
-                    _, predicted = torch.max(outputs.data, 1)
+                    _, predicted = torch.nn.functional.softmax(outputs.data, dim=1)
                     total += labels.size(0)
                     correct += (predicted == labels).sum().item()
             cur_accuracy = (100 * correct / total)
