@@ -16,6 +16,23 @@ import sys
 
 from torch.utils.data import Dataset
 
+import optparse
+
+
+parser = optparse.OptionParser()
+
+parser.add_option('-r', '--restore_model',
+    action="store", dest="restore_model",
+    help="Path to PyTorch model to restore", default="")
+
+parser.add_option('-d', '--dump',
+    action="store", dest="dump",
+    help="Dump PyTorch model to ONNX", default="")
+
+parser.add_option('-p', '--dataset_path',
+    action="store", dest="dataset_path",
+    help="Path to dataset root dif", default="")
+
 
 
 # fig = plt.figure()
@@ -113,7 +130,7 @@ class ToTensor(object):
         return {'image': torch.from_numpy(image.transpose((2, 0, 1))), 'label': label}
 
 
-def test(dataset_root_dir: str, restore_model: str):
+def simple_net(dataset_root_dir: str, restore_model: str):
     """ """
 
     """
@@ -240,127 +257,7 @@ def test(dataset_root_dir: str, restore_model: str):
     #plt.pause(1e9)
 
 
-def main():
-    transform = transforms.Compose(
-        [transforms.ToTensor(),
-         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
-    # Train data-set
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                            download=False, transform=transform)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
-                                              shuffle=True, num_workers=2)
-
-    # Test data-set
-    testset = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                           download=False, transform=transform)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=4,
-                                             shuffle=False, num_workers=2)
-
-    classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-
-    class Net(nn.Module):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.conv1 = nn.Conv2d(3, 16, 5)
-            self.conv2 = nn.Conv2d(16, 32, 3)
-            self.conv3 = nn.Conv2d(32, 64, 3)
-
-            self.pool = nn.MaxPool2d(2, 2)
-
-            self.fc1 = nn.Linear(64 *  10 * 10, 220)
-            self.fc2 = nn.Linear(220, 100)
-            self.fc3 = nn.Linear(100, 10)
-
-        def forward(self, x):
-            x = self.pool(F.relu(self.conv1(x)))
-            x = F.relu(self.conv2(x))
-            x = F.relu(self.conv3(x))
-            x = x.view(-1, 64 * 10 * 10)
-            x = F.relu(self.fc1(x))
-            x = F.relu(self.fc2(x))
-            x = self.fc3(x)
-            return x
-
-    net = Net()
-
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-
-
-    for epoch in range(2):  # loop over the dataset multiple times
-        running_loss = 0.0
-        for i, data in enumerate(trainloader, 0):
-            # get the inputs
-            inputs, labels = data
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            # forward + backward + optimize
-            outputs = net(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-            # print statistics
-            running_loss += loss.item()
-            if i % 2000 == 1999:    # print every 2000 mini-batches
-                print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / 2000))
-                running_loss = 0.0
-
-    print('Finished Training')
-
-
-    # Predict
-    dataiter = iter(testloader)
-    images, labels = dataiter.next()
-
-    # print images
-    imshow(torchvision.utils.make_grid(images))
-    print('GroundTruth: ', ' '.join('%5s' % classes[labels[j]] for j in range(4)))
-
-    outputs = net(images)
-
-    _, predicted = torch.max(outputs, 1)
-
-    print('Predicted: ', ' '.join('%5s' % classes[predicted[j]]
-                                  for j in range(4)))
-
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for data in testloader:
-            images, labels = data
-            outputs = net(images)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-
-    print('Accuracy of the network on the 10000 test images: %d %%' % (
-            100 * correct / total))
-
-    class_correct = list(0. for i in range(10))
-    class_total = list(0. for i in range(10))
-    with torch.no_grad():
-        for data in testloader:
-            images, labels = data
-            outputs = net(images)
-            _, predicted = torch.max(outputs, 1)
-            c = (predicted == labels).squeeze()
-            for i in range(4):
-                label = labels[i]
-                class_correct[label] += c[i].item()
-                class_total[label] += 1
-
-
-    for i in range(10):
-        print('Accuracy of %5s : %2d %%' % (
-            classes[i], 100 * class_correct[i] / class_total[i]))
-
-
-def vgg_train(dataset_root_dir: str, restore_model: str):
+def vgg_train(dataset_root_dir: str, restore_model: str, dump_to_onnx: str):
     """ """
 
     """
@@ -389,12 +286,35 @@ def vgg_train(dataset_root_dir: str, restore_model: str):
 
     classes = ('not hotdog', 'hotdog')
 
-    net = torchvision.models.vgg16_bn(True)
-    for param in net.parameters():
+    class Net(nn.Module):
+        def __init__(self, model):
+            super(Net, self).__init__()
+            self.vgg_model = model
+            self.vgg_model.classifier._modules['6'] = nn.Linear(4096, 2)
+
+        def forward(self, x):
+            x = self.vgg_model(x)
+            x = F.softmax(x, dim=0)
+            return x
+
+    net = Net(torchvision.models.vgg16_bn(True))
+    for param in list(net.parameters())[:-2]:
         param.requiers_grad = False
 
-    #print(net)
-    net.classifier._modules['6'] = nn.Linear(4096, 2)
+    net = net.to(device)
+    print(net)
+
+
+#    if restore_model is not None:
+#        net.load_state_dict(torch.load(restore_model, map_location={'cuda:0': 'cpu'}))
+#        print("Model {} restored".format(restore_model))
+
+    if len(dump_to_onnx) > 0:
+        from torch.autograd import Variable
+        dummy_input = Variable(torch.randn(1, 3, 224, 224), requires_grad=True)
+        torch.onnx.export(net, dummy_input, "{}.onnx".format(dump_to_onnx), export_params=True, verbose=True)
+        print("Saved ONNX model as {}.onnx".format(dump_to_onnx))
+        return
 
     """
         SETUP LOSS FUNCTION
@@ -455,7 +375,5 @@ def vgg_train(dataset_root_dir: str, restore_model: str):
 
 
 if __name__ == "__main__":
-    restore_model = sys.argv[2] if len(sys.argv) > 2 else None
-    #test(sys.argv[1], restore_model)
-    #main()
-    vgg_train(sys.argv[1], restore_model)
+    options, args = parser.parse_args()
+    vgg_train(options.dataset_path, options.restore_model, options.dump)
