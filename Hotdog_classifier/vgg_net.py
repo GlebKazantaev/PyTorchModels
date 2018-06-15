@@ -53,7 +53,11 @@ def vgg_train(dataset_root_dir: str, restore_model: str, dump_to_onnx: str):
     for param in list(net.parameters())[:-2]:
         param.requiers_grad = False
 
-    net = net.to(device)
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        net = nn.DataParallel(net)
+
+    net.to(device)
 
     # if restore_model is not None:
     #     net.load_state_dict(torch.load(restore_model, map_location={'cuda:0': 'cpu'}))
@@ -92,6 +96,9 @@ def vgg_train(dataset_root_dir: str, restore_model: str, dump_to_onnx: str):
 
             # forward + backward + optimize
             outputs = net(inputs)
+
+            print("Outside: input size", inputs.size(), "output_size", outputs.size())
+
             loss = criterion(outputs, labels.long().view(4))
             loss.backward()
             optimizer.step()
