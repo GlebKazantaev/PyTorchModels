@@ -32,6 +32,8 @@ if __name__ == "__main__":
         print("Please use -r <path_to_trained_model>")
         exit(1)
 
+    simple_net(options.dataset_path, '')
+
     if options.eval:
         vgg_eval_model(options.dataset_path, options.restore_model)
     else:
