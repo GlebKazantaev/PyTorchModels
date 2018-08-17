@@ -16,13 +16,13 @@ def random_crop_image(images, h, w):
         _w, _h = img.size
         assert _w == img_w and _h == img_h
 
-    rand_h, rand_w = random.randint(0, img_h - h - 1), random.randint(0, img_w - w - 1)
+    rand_h, rand_w = random.randint(0, img_h - h), random.randint(0, img_w - w)
 
     crop_images = []
     for img in images:
         crop_images.append(transforms.functional.crop(img, rand_h, rand_w, h, w))
 
-    if len(crop_images) == 0:
+    if len(crop_images) == 1:
         return crop_images[0]
     return crop_images
 

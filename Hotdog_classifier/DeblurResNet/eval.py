@@ -12,7 +12,7 @@ def eval(restore_model, img_path='C:\\Work\\DL\\datasets\\GOPRO_Large\\test\\GOP
     net = DeblurResNet()
     net.load_state_dict(torch.load(restore_model, map_location={'cuda:0': 'cpu'}))
 
-    img = random_crop_image(Image.open(img_path), 64, 64)
+    img = Image.open(img_path)#random_crop_image(Image.open(img_path), 64, 64)
 
     transform = transforms.Compose([transforms.ToTensor()])
     img = transform(img).float()
