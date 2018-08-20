@@ -10,7 +10,7 @@ from common import save_to_onnx
 from PIL import Image
 
 
-def eval(restore_model, img_path='C:\\Work\\DL\\datasets\\GOPRO_Large\\test\\GOPR0384_11_00\\blur\\000001.png'):
+def eval(restore_model, img_path):
 
     # Select device for training
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -25,9 +25,6 @@ def eval(restore_model, img_path='C:\\Work\\DL\\datasets\\GOPRO_Large\\test\\GOP
         print("Model {} was restored".format(restore_model))
 
     net.eval()
-
-#net = DeblurResNet()
-#    net.load_state_dict(torch.load(restore_model))#$, map_location={'cuda:0': 'cpu'}))
 
     img = Image.open(img_path)#random_crop_image(Image.open(img_path), 64, 64)
 

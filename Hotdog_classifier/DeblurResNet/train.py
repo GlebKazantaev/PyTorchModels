@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import platform
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
@@ -7,21 +8,19 @@ from DeblurResNet.dataset import DeblurDataset
 from DeblurResNet.deblur_resnet import DeblurResNet
 
 DATASET_DIR = '/home/user/gkazanta/GOPRO_Large'
+if platform.system() == 'Windows':
+    DATASET_DIR = 'C:\\Work\\DL\\datasets\\GOPRO_Large'
 
 
 def train(restore_model=None):
     # Create data sets for training & for testing
     dataset_train = DeblurDataset(train=True, root_dir=DATASET_DIR, transform=transforms.Compose([
-        # transforms.ToPILImage(),
-        # transforms.Resize((64, 64)),
-        transforms.ToTensor(),
+        transforms.ToTensor()
     ]))
     train_dataloader = DataLoader(dataset_train, batch_size=4, shuffle=True, num_workers=1)
 
     dataset_test = DeblurDataset(train=False, root_dir=DATASET_DIR, transform=transforms.Compose([
-        # transforms.ToPILImage(),
-        # transforms.Resize((64, 64)),
-        transforms.ToTensor(),
+        transforms.ToTensor()
     ]))
     test_dataloader = DataLoader(dataset_test, batch_size=4, shuffle=True, num_workers=1)
 
@@ -45,7 +44,7 @@ def train(restore_model=None):
 
     # Setup loss function
     criterion = nn.MSELoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    optimizer = torch.optim.Adam(net.parameters(), lr=1e-4)
 
     def rmse(y, y_hat):
         """Compute root mean squared error"""
@@ -75,9 +74,9 @@ def train(restore_model=None):
             # print statistics
             print('.', end='')
             running_loss += loss.item()
+            print(running_loss)
             if i % 100 == 99:  # print every 100 mini-batches
-                print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / 100))
+                print('[%d, %5d] loss: %.3lf' % (epoch + 1, i + 1, running_loss))
                 running_loss = 0.0
         epoch += 1
 
