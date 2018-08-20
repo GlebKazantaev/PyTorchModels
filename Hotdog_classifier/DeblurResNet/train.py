@@ -17,12 +17,12 @@ def train(restore_model=None):
     dataset_train = DeblurDataset(train=True, root_dir=DATASET_DIR, transform=transforms.Compose([
         transforms.ToTensor()
     ]))
-    train_dataloader = DataLoader(dataset_train, batch_size=4, shuffle=True, num_workers=1)
+    train_dataloader = DataLoader(dataset_train, batch_size=1, shuffle=True, num_workers=1)
 
     dataset_test = DeblurDataset(train=False, root_dir=DATASET_DIR, transform=transforms.Compose([
         transforms.ToTensor()
     ]))
-    test_dataloader = DataLoader(dataset_test, batch_size=4, shuffle=True, num_workers=1)
+    test_dataloader = DataLoader(dataset_test, batch_size=1, shuffle=True, num_workers=1)
 
     # Select device for training
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -59,6 +59,8 @@ def train(restore_model=None):
         for i, data in enumerate(train_dataloader, 0):
             # get the inputs
             inputs, reference = data['image'].float(), data['reference'].float()
+            inputs = inputs.squeeze(0)
+            reference = reference.squeeze(0)
             inputs, reference = inputs.to(device), reference.to(device)
 
             # zero the parameter gradients

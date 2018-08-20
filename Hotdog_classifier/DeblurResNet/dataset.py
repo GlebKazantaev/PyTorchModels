@@ -1,4 +1,5 @@
 import os
+import torch
 import random
 
 from skimage import io
@@ -24,6 +25,34 @@ def random_crop_image(images, h, w):
 
     if len(crop_images) == 1:
         return crop_images[0]
+    return crop_images
+
+
+def split_images(images, h, w):
+    if type(images) is not list:
+        images = [images]
+
+    img_w, img_h = images[0].size
+    for img in images:
+        _w, _h = img.size
+        assert _w == img_w and _h == img_h
+
+    #random.randint(0, img_h - h), random.randint(0, img_w - w)
+
+    crop_images = [[] for x in range(len(images))]
+    id = 0
+    for img in images:
+        cur_h, cur_w = 0, 0
+        while cur_h + h <= img_h:
+            cur_w = 0
+            while cur_w + w <= img_w:
+                crop_images[id].append(transforms.functional.crop(img, cur_h, cur_w, h, w))
+                cur_w += w
+            cur_h += h
+        id += 1
+
+    if len(images) == 1:
+        return crop_images[0][0]
     return crop_images
 
 
@@ -69,12 +98,17 @@ class DeblurDataset(Dataset):
         in_image = Image.open(in_img_name).convert('RGB')
         ref_image = Image.open(ref_img_name).convert('RGB')
 
-        in_image, ref_image = random_crop_image([in_image, ref_image], 256, 256)
+        #in_image, ref_image = random_crop_image([in_image, ref_image], 256, 256)
+        splited = split_images([in_image, ref_image], 256, 256)
+        in_image, ref_image = splited[0], splited[1]
 
         sample = {'image': in_image, 'reference': ref_image}
-
         if self.transform:
-            sample['image'] = self.transform(in_image)
-            sample['reference'] = self.transform(ref_image)
+            for id in range(len(in_image)):
+                #sample['image'][id].save('img_{}.bmp'.format(id))
+                #sample['reference'][id].save('reference_{}.bmp'.format(id))
+                sample['image'][id] = self.transform(in_image[id])
+                sample['reference'][id] = self.transform(ref_image[id])
 
-        return sample
+        return {'image': torch.stack([crop for crop in sample['image']]),
+                'reference': torch.stack([crop for crop in sample['reference']])}
