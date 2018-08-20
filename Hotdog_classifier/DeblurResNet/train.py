@@ -76,18 +76,19 @@ def train(restore_model=None):
             # print statistics
             print('.', end='')
             running_loss += loss.item()
-            print(running_loss)
             if i % 100 == 99:  # print every 100 mini-batches
                 print('[%d, %5d] loss: %.3lf' % (epoch + 1, i + 1, running_loss))
                 running_loss = 0.0
         epoch += 1
 
-        for dl, type in zip([test_dataloader, train_dataloader], ['test', 'train']):
+        for dl, type in zip([test_dataloader], ['test']):
             loss = 0
             total = 0
             with torch.no_grad():
                 for data in dl:
                     images, reference = data['image'].float(), data['reference'].float()
+                    images = images.squeeze(0)
+                    reference = reference.squeeze(0)
                     images, reference = images.to(device), reference.to(device)
 
                     outputs = net(images)
