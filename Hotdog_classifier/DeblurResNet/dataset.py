@@ -69,7 +69,7 @@ class DeblurDataset(Dataset):
         in_image = Image.open(in_img_name).convert('RGB')
         ref_image = Image.open(ref_img_name).convert('RGB')
 
-        in_image, ref_image = random_crop_image([in_image, ref_image], 64, 64)
+        in_image, ref_image = random_crop_image([in_image, ref_image], 256, 256)
 
         sample = {'image': in_image, 'reference': ref_image}
 
