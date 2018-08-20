@@ -7,7 +7,7 @@ if __name__ == "__main__":
     if sys.argv[1] == 'train':
         train()
     elif sys.argv[1] == 'eval':
-        eval("C:\\Work\\PyTorchModels\\Hotdog_classifier\\model-frozen-78", 'C:\\Users\\gkazanta\\Pictures\\deblur_test.png')
+        eval("/home/gkazanta/PyTorchModels/Hotdog_classifier/DeblurResNet/model-frozen-3", sys.argv[2])
     elif sys.argv[1] == 'save_to_onnx':
         load_and_dump_to_onnx("C:\Work\PyTorchModels\Hotdog_classifier\model-frozen-1")
     else:

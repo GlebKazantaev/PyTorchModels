@@ -6,7 +6,7 @@ from torchvision import transforms
 from DeblurResNet.dataset import DeblurDataset
 from DeblurResNet.deblur_resnet import DeblurResNet
 
-DATASET_DIR = 'C:\\Work\\DL\\datasets\\GOPRO_Large'
+DATASET_DIR = '/home/user/gkazanta/GOPRO_Large'
 
 
 def train(restore_model=None):
