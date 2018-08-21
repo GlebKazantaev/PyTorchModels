@@ -100,7 +100,10 @@ class DeblurDataset(Dataset):
 
         #in_image, ref_image = random_crop_image([in_image, ref_image], 256, 256)
         splited = split_images([in_image, ref_image], 128, 128)
-        in_image, ref_image = splited[0], splited[1]
+
+        rand_inputs_ids = [random.randint(0, len(splited[0])-1) for x in range(15)]
+
+        in_image, ref_image = [splited[0][id] for id in rand_inputs_ids], [splited[1][id] for id in rand_inputs_ids]
 
         # Central crop for reference image
         # for id in range(len(ref_image)):
