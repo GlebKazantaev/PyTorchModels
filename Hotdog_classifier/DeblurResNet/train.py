@@ -34,7 +34,7 @@ def train(restore_model=None):
     # Use data parallel for multi GPU training
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
-        net = nn.DataParallel(net)
+        net = nn.DataParallel(net, device_ids=[0, 1, 2])
     net.to(device)
 
     # Restore model if given

@@ -99,8 +99,12 @@ class DeblurDataset(Dataset):
         ref_image = Image.open(ref_img_name).convert('RGB')
 
         #in_image, ref_image = random_crop_image([in_image, ref_image], 256, 256)
-        splited = split_images([in_image, ref_image], 256, 256)
+        splited = split_images([in_image, ref_image], 128, 128)
         in_image, ref_image = splited[0], splited[1]
+
+        # Central crop for reference image
+        for id in range(len(ref_image)):
+            ref_image[id] = transforms.functional.crop(ref_image[id], 2, 2, 124, 124)
 
         sample = {'image': in_image, 'reference': ref_image}
         if self.transform:
