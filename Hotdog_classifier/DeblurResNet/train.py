@@ -1,3 +1,4 @@
+import time
 import torch
 import torch.nn as nn
 import platform
@@ -56,6 +57,8 @@ def train(restore_model=None):
     while True:
         print("Running {} epoch".format(epoch))
         running_loss = 0.0
+        start_time = time.time()
+        start_trening_time = time.time()
         for i, data in enumerate(train_dataloader, 0):
             # get the inputs
             inputs, reference = data['image'].float(), data['reference'].float()
@@ -74,11 +77,14 @@ def train(restore_model=None):
             optimizer.step()
 
             # print statistics
-            print('.', end='')
+            print('.', end='', flush=True)
             running_loss += loss.item()
             if i % 100 == 99:  # print every 100 mini-batches
-                print('[%d, %5d] loss: %.3lf' % (epoch + 1, i + 1, running_loss))
+                elapsed_time = time.time() - start_time
+                print('[%d, %5d] loss: %.3lf ' % (epoch + 1, i + 1, running_loss), end='')
+                print(time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                 running_loss = 0.0
+                start_time = time.time()
         epoch += 1
 
         for dl, type in zip([test_dataloader], ['test']):
@@ -95,7 +101,8 @@ def train(restore_model=None):
                     total += len(outputs)
                     loss += rmse(outputs, reference)
 
-            print('Loss of the network on the ' + type + ' set with ' + str(total) + ' test images: %f' % loss)
+            print('\nLoss of the network on the ' + type + ' set with ' + str(total) + ' test images: %f' % loss)
+        print(time.strftime("%H:%M:%S", time.gmtime(time.time() - start_trening_time)))
 
         torch.save(net.state_dict(), './model-frozen-{}'.format(epoch))
 
