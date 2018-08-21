@@ -2,6 +2,7 @@ import time
 import torch
 import torch.nn as nn
 import platform
+from common import Logger, logging
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
@@ -37,6 +38,8 @@ def train(restore_model=None):
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         net = nn.DataParallel(net, device_ids=[0, 1, 2])
     net.to(device)
+
+    logger = Logger('./logs')
 
     # Restore model if given
     if restore_model is not None:
@@ -100,8 +103,10 @@ def train(restore_model=None):
                     outputs = net(images)
                     total += len(outputs)
                     loss += rmse(outputs, reference)
-
             print('\nLoss of the network on the ' + type + ' set with ' + str(total) + ' test images: %f' % loss)
+            # Tensorboard logging
+            logging(logger, net, {'loss': running_loss, 'test': loss}, epoch)
+
         print(time.strftime("%H:%M:%S", time.gmtime(time.time() - start_trening_time)))
 
         torch.save(net.state_dict(), './model-frozen-{}'.format(epoch))

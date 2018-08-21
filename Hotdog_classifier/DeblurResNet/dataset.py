@@ -103,8 +103,8 @@ class DeblurDataset(Dataset):
         in_image, ref_image = splited[0], splited[1]
 
         # Central crop for reference image
-        for id in range(len(ref_image)):
-            ref_image[id] = transforms.functional.crop(ref_image[id], 2, 2, 124, 124)
+        # for id in range(len(ref_image)):
+        #     ref_image[id] = transforms.functional.crop(ref_image[id], 2, 2, 124, 124)
 
         sample = {'image': in_image, 'reference': ref_image}
         if self.transform:

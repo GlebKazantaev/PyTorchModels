@@ -36,7 +36,7 @@ class DeblurResNet(nn.Module):
 
     def __init__(self):
         super(DeblurResNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=0, bias=False)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=2, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
 
         self.layer1 = self._make_layer()
