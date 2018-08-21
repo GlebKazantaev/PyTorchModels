@@ -1,6 +1,5 @@
 import os
 
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.misc
@@ -115,10 +114,3 @@ def save_to_onnx(net, model_name):
     dummy_input = Variable(torch.randn(input_shape), requires_grad=True)
     torch.onnx.export(net, dummy_input, "{}".format(model_name), export_params=True)  # , verbose=True)
     print('[ INFO ] Success\n')
-
-
-def split_images(path_with_images, h, w):
-    images_list = os.listdir(path_with_images)
-    for image_path in images_list:
-        img = cv2.imread(image_path)
-        h, w = img.shape
