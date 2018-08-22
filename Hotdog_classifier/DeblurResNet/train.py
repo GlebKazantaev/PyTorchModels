@@ -14,7 +14,7 @@ if platform.system() == 'Windows':
     DATASET_DIR = 'C:\\Work\\DL\\datasets\\GOPRO_Large'
 
 
-def train(restore_model=None):
+def train(restore_model=None, epoch=0):
     # Create data sets for training & for testing
     dataset_train = DeblurDataset(train=True, root_dir=DATASET_DIR, transform=transforms.Compose([
         transforms.ToTensor()
@@ -48,7 +48,7 @@ def train(restore_model=None):
 
     # Setup loss function
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr=1e-4)
+    optimizer = torch.optim.Adam(net.parameters(), lr=5*(1e-5))
 
     def rmse(y, y_hat):
         """Compute root mean squared error"""
@@ -56,7 +56,7 @@ def train(restore_model=None):
 
     # Start training
     last_accuracy = None
-    epoch = 0
+#    epoch = 0
     while True:
         print("Running {} epoch".format(epoch))
         running_loss = 0.0
