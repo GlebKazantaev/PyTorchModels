@@ -115,6 +115,9 @@ class DeblurDataset(Dataset):
                 #sample['image'][id].save('img_{}.bmp'.format(id))
                 #sample['reference'][id].save('reference_{}.bmp'.format(id))
                 sample['image'][id] = self.transform(in_image[id])
+                # Normalize inputs
+                sample['image'][id] = transforms.functional.normalize(sample['image'][id] ,mean=[0.5, 0.5, 0.5], std=[1, 1, 1])
+
                 sample['reference'][id] = self.transform(ref_image[id])
 
         return {'image': torch.stack([crop for crop in sample['image']]),
