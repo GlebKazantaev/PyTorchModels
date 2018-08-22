@@ -19,12 +19,12 @@ def train(restore_model=None, epoch=0):
     dataset_train = DeblurDataset(train=True, root_dir=DATASET_DIR, transform=transforms.Compose([
         transforms.ToTensor()
     ]))
-    train_dataloader = DataLoader(dataset_train, batch_size=1, shuffle=True, num_workers=1)
+    train_dataloader = DataLoader(dataset_train, batch_size=2, shuffle=True, num_workers=1)
 
     dataset_test = DeblurDataset(train=False, root_dir=DATASET_DIR, transform=transforms.Compose([
         transforms.ToTensor()
     ]))
-    test_dataloader = DataLoader(dataset_test, batch_size=1, shuffle=True, num_workers=1)
+    test_dataloader = DataLoader(dataset_test, batch_size=2, shuffle=True, num_workers=1)
 
     # Select device for training
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -65,8 +65,8 @@ def train(restore_model=None, epoch=0):
         for i, data in enumerate(train_dataloader, 0):
             # get the inputs
             inputs, reference = data['image'].float(), data['reference'].float()
-            inputs = inputs.squeeze(0)
-            reference = reference.squeeze(0)
+            inputs = inputs.squeeze(1)
+            reference = reference.squeeze(1)
             inputs, reference = inputs.to(device), reference.to(device)
 
             # zero the parameter gradients
@@ -88,7 +88,6 @@ def train(restore_model=None, epoch=0):
                 print(time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                 running_loss = 0.0
                 start_time = time.time()
-        epoch += 1
 
         for dl, type in zip([test_dataloader], ['test']):
             loss = 0
@@ -96,8 +95,8 @@ def train(restore_model=None, epoch=0):
             with torch.no_grad():
                 for data in dl:
                     images, reference = data['image'].float(), data['reference'].float()
-                    images = images.squeeze(0)
-                    reference = reference.squeeze(0)
+                    images = images.squeeze(1)
+                    reference = reference.squeeze(1)
                     images, reference = images.to(device), reference.to(device)
 
                     outputs = net(images)
@@ -106,9 +105,9 @@ def train(restore_model=None, epoch=0):
             print('\nLoss of the network on the ' + type + ' set with ' + str(total) + ' test images: %f' % loss)
             # Tensorboard logging
             logging(logger, net, {'loss': running_loss, 'test': loss}, epoch)
-
         print(time.strftime("%H:%M:%S", time.gmtime(time.time() - start_trening_time)))
-
         torch.save(net.state_dict(), './model-frozen-{}'.format(epoch))
+        epoch += 1
+
 
     print('Finished Training')
