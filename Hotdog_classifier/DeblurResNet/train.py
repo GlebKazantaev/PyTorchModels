@@ -90,24 +90,24 @@ def train(restore_model=None, epoch=0):
                 print(time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                 running_loss = 0.0
                 start_time = time.time()
+        if epoch % 5 == 0:
+            for dl, type in zip([test_dataloader], ['test']):
+                loss = 0
+                total = 0
+                with torch.no_grad():
+                    for data in dl:
+                        images, reference = data['image'].float(), data['reference'].float()
+                        images = images.squeeze(1)
+                        reference = reference.squeeze(1)
+                        images, reference = images.to(device), reference.to(device)
 
-        for dl, type in zip([test_dataloader], ['test']):
-            loss = 0
-            total = 0
-            with torch.no_grad():
-                for data in dl:
-                    images, reference = data['image'].float(), data['reference'].float()
-                    images = images.squeeze(1)
-                    reference = reference.squeeze(1)
-                    images, reference = images.to(device), reference.to(device)
-
-                    outputs = net(images)
-                    total += len(outputs)
-                    loss += rmse(outputs, reference)
-            print('\nLoss of the network on the ' + type + ' set with ' + str(total) + ' test images: %f' % loss)
-            # Tensorboard logging
-            logging(logger, net, {'loss': epoch_loss, 'test': loss}, epoch)
-        print(time.strftime("%H:%M:%S", time.gmtime(time.time() - start_trening_time)))
+                        outputs = net(images)
+                        total += len(outputs)
+                        loss += rmse(outputs, reference)
+                print('\nLoss of the network on the ' + type + ' set with ' + str(total) + ' test images: %f' % loss)
+                # Tensorboard logging
+                logging(logger, net, {'loss': epoch_loss, 'test': loss}, epoch)
+            print(time.strftime("%H:%M:%S", time.gmtime(time.time() - start_trening_time)))
         torch.save(net.state_dict(), './model-frozen-{}'.format(epoch))
         epoch += 1
 
