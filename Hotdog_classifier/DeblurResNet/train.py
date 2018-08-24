@@ -19,12 +19,12 @@ def train(restore_model=None, epoch=0):
     dataset_train = DeblurDataset(train=True, root_dir=DATASET_DIR, transform=transforms.Compose([
         transforms.ToTensor()
     ]))
-    train_dataloader = DataLoader(dataset_train, batch_size=2, shuffle=True, num_workers=1)
+    train_dataloader = DataLoader(dataset_train, batch_size=4, shuffle=True, num_workers=1)
 
     dataset_test = DeblurDataset(train=False, root_dir=DATASET_DIR, transform=transforms.Compose([
         transforms.ToTensor()
     ]))
-    test_dataloader = DataLoader(dataset_test, batch_size=2, shuffle=True, num_workers=1)
+    test_dataloader = DataLoader(dataset_test, batch_size=4, shuffle=True, num_workers=1)
 
     # Select device for training
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -60,6 +60,7 @@ def train(restore_model=None, epoch=0):
     while True:
         print("Running {} epoch".format(epoch))
         running_loss = 0.0
+        epoch_loss = 0.0
         start_time = time.time()
         start_trening_time = time.time()
         for i, data in enumerate(train_dataloader, 0):
@@ -82,6 +83,7 @@ def train(restore_model=None, epoch=0):
             # print statistics
             print('.', end='', flush=True)
             running_loss += loss.item()
+            epoch_loss += loss.item()
             if i % 100 == 99:  # print every 100 mini-batches
                 elapsed_time = time.time() - start_time
                 print('[%d, %5d] loss: %.3lf ' % (epoch + 1, i + 1, running_loss), end='')
@@ -104,7 +106,7 @@ def train(restore_model=None, epoch=0):
                     loss += rmse(outputs, reference)
             print('\nLoss of the network on the ' + type + ' set with ' + str(total) + ' test images: %f' % loss)
             # Tensorboard logging
-            logging(logger, net, {'loss': running_loss, 'test': loss}, epoch)
+            logging(logger, net, {'loss': epoch_loss, 'test': loss}, epoch)
         print(time.strftime("%H:%M:%S", time.gmtime(time.time() - start_trening_time)))
         torch.save(net.state_dict(), './model-frozen-{}'.format(epoch))
         epoch += 1

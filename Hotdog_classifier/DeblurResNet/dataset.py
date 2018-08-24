@@ -98,12 +98,13 @@ class DeblurDataset(Dataset):
         in_image = Image.open(in_img_name).convert('RGB')
         ref_image = Image.open(ref_img_name).convert('RGB')
 
-        #in_image, ref_image = random_crop_image([in_image, ref_image], 256, 256)
-        splited = split_images([in_image, ref_image], 128, 128)
+        in_image, ref_image = random_crop_image([in_image, ref_image], 300, 300)
+        in_image, ref_image = [in_image], [ref_image]
+        #splited = split_images([in_image, ref_image], 128, 128)
 
-        rand_inputs_ids = [random.randint(0, len(splited[0])-1) for x in range(1)]
+        #rand_inputs_ids = [random.randint(0, len(splited[0])-1) for x in range(1)]
 
-        in_image, ref_image = [splited[0][id] for id in rand_inputs_ids], [splited[1][id] for id in rand_inputs_ids]
+        #in_image, ref_image = [splited[0][id] for id in rand_inputs_ids], [splited[1][id] for id in rand_inputs_ids]
 
         # Central crop for reference image
         # for id in range(len(ref_image)):
@@ -115,7 +116,6 @@ class DeblurDataset(Dataset):
                 #sample['image'][id].save('img_{}.bmp'.format(id))
                 #sample['reference'][id].save('reference_{}.bmp'.format(id))
                 sample['image'][id] = self.transform(in_image[id])
-                # Normalize inputs
                 sample['image'][id] = transforms.functional.normalize(sample['image'][id] ,mean=[0.5, 0.5, 0.5], std=[1, 1, 1])
 
                 sample['reference'][id] = self.transform(ref_image[id])

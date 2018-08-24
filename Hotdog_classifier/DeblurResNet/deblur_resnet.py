@@ -5,24 +5,24 @@ class BasicBlock(nn.Module):
     def __init__(self, inplanes, outplanes, stride=1):
         super(BasicBlock, self).__init__()
         self.conv1 = BasicBlock.conv3x3(inplanes, outplanes, stride)
-        #self.bn1 = nn.BatchNorm2d(outplanes)
+        self.bn1 = nn.BatchNorm2d(outplanes)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = BasicBlock.conv3x3(outplanes, outplanes)
-        #self.bn2 = nn.BatchNorm2d(outplanes)
+        self.bn2 = nn.BatchNorm2d(outplanes)
         self.stride = stride
 
     def forward(self, x):
         residual = x
 
         out = self.conv1(x)
-        #out = self.bn1(out)
+        out = self.bn1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
-        #out = self.bn2(out)
+        out = self.bn2(out)
 
         out += residual
-        #out = self.relu(out)
+        out = self.relu(out)
 
         return out
 
@@ -36,8 +36,8 @@ class DeblurResNet(nn.Module):
 
     def __init__(self):
         super(DeblurResNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=2, bias=False)
-        #self.bn1 = nn.BatchNorm2d(64)
+        self.conv1 = nn.Conv2d(3, 256, kernel_size=5, stride=1, padding=2, bias=False)
+        self.bn1 = nn.BatchNorm2d(256)
 
         self.layer1 = self._make_layer()
         self.layer2 = self._make_layer()
@@ -60,7 +60,7 @@ class DeblurResNet(nn.Module):
         self.layer19 = self._make_layer()
 
 
-        self.conv2 = nn.Conv2d(64, 3, kernel_size=5, stride=1, padding=2, bias=False)
+        self.conv2 = nn.Conv2d(256, 3, kernel_size=5, stride=1, padding=2, bias=False)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -71,7 +71,7 @@ class DeblurResNet(nn.Module):
 
     def _make_layer(self):
         layers = []
-        layers.append(BasicBlock(64, 64))
+        layers.append(BasicBlock(256, 256))
         return nn.Sequential(*layers)
 
     def forward(self, x):
