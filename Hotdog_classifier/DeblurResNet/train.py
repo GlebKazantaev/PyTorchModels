@@ -84,7 +84,7 @@ def train(restore_model=None, epoch=0):
             print('.', end='', flush=True)
             running_loss += loss.item()
             epoch_loss += loss.item()
-            if i % 100 == 99:  # print every 100 mini-batches
+            if i % 10 == 9:  # print every 100 mini-batches
                 elapsed_time = time.time() - start_time
                 print('[%d, %5d] loss: %.3lf ' % (epoch + 1, i + 1, running_loss), end='')
                 print(time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
@@ -94,6 +94,7 @@ def train(restore_model=None, epoch=0):
             for dl, type in zip([test_dataloader], ['test']):
                 loss = 0
                 total = 0
+                reference, outputs = None, None
                 with torch.no_grad():
                     for data in dl:
                         images, reference = data['image'].float(), data['reference'].float()
@@ -106,7 +107,7 @@ def train(restore_model=None, epoch=0):
                         loss += rmse(outputs, reference)
                 print('\nLoss of the network on the ' + type + ' set with ' + str(total) + ' test images: %f' % loss)
                 # Tensorboard logging
-                logging(logger, net, {'loss': epoch_loss, 'test': loss}, epoch)
+                logging(logger, net, {'loss': epoch_loss, 'test': loss, 'ref_img': reference, 'outputs': outputs}, epoch)
             print(time.strftime("%H:%M:%S", time.gmtime(time.time() - start_trening_time)))
         torch.save(net.state_dict(), './model-frozen-{}'.format(epoch))
         epoch += 1

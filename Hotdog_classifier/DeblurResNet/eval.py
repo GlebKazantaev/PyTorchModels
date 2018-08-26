@@ -8,7 +8,7 @@ from DeblurResNet.deblur_resnet import DeblurResNet
 from DeblurResNet.dataset import random_crop_image
 from common import save_to_onnx
 from PIL import Image
-
+from common import Logger, logging
 
 def eval(restore_model, img_path):
 
@@ -29,10 +29,15 @@ def eval(restore_model, img_path):
     img = Image.open(img_path)#random_crop_image(Image.open(img_path), 64, 64)
 
     transform = transforms.Compose([transforms.ToTensor()])
-    img = transform(img).float()
+    img = transform(img)
+    img_norm = transforms.functional.normalize(img ,mean=[0.5, 0.5, 0.5], std=[1, 1, 1]).float()
+   # iimg = transform(img).float()
+    img_norm = img_norm.unsqueeze(0)
     img = img.unsqueeze(0)
 
-    out = net(img)
+    out = net(img_norm)
+    logger = Logger('/home/gkazanta/PyTorchModels/Hotdog_classifier/DeblurResNet/logger') 
+    logging(logger, net, {'ref_img': img, 'outputs': out}, 1)
 
     out = out.squeeze(0)
     #out = transforms.functional.to_pil_image(out)

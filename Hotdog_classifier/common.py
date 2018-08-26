@@ -78,28 +78,34 @@ class Logger(object):
         self.writer.flush()
 
 
-def logging(logger, net, info, step):
+def logging(logger, net, data, step):
     # ================================================================== #
     #                        Tensorboard Logging                         #
     # ================================================================== #
 
-    # 1. Log scalar values (scalar summary)
-    #info = {'loss': loss.item(), 'accuracy': accuracy.item()}
+    if 'loss' in data.keys() and 'accuracy' in data.keys():
+        # 1. Log scalar values (scalar summary)
+        info = {'loss': data['loss'], 'accuracy': data['accuracy']}
 
-    for tag, value in info.items():
-        logger.scalar_summary(tag, value, step + 1)
+        for tag, value in info.items():
+            logger.scalar_summary(tag, value, step + 1)
 
-    # 2. Log values and gradients of the parameters (histogram summary)
-    for tag, value in net.named_parameters():
-        tag = tag.replace('.', '/')
-        logger.histo_summary(tag, value.data.cpu().numpy(), step + 1)
-        logger.histo_summary(tag + '/grad', value.grad.data.cpu().numpy(), step + 1)
+        # 2. Log values and gradients of the parameters (histogram summary)
+        for tag, value in net.named_parameters():
+            tag = tag.replace('.', '/')
+            logger.histo_summary(tag, value.data.cpu().numpy(), step + 1)
+            logger.histo_summary(tag + '/grad', value.grad.data.cpu().numpy(), step + 1)
 
-    # # 3. Log training images (image summary)
-    # info = {'images': images.view(-1, 28, 28)[:10].cpu().numpy()}
-    #
-    # for tag, images in info.items():
-    #     logger.image_summary(tag, images, step + 1)
+    # 3. Log training images (image summary)
+    info = {'outputs': data['outputs'].detach().cpu().numpy(),
+            'ref_img': data['ref_img'].detach().cpu().numpy()
+           }
+    
+    for tag, images in info.items():
+        id = 0
+        for i in range(len(images)):
+            logger.image_summary("{}_{}".format(tag, id) , images, step + 1)
+            id += 1
 
 
 def imshow(img):
