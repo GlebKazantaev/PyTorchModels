@@ -82,6 +82,7 @@ if __name__ == "__main__":
     if options.train:
         engine.train(dataset_dir=options.dataset_root,
                      loss_type=options.loss,
+                     restore_model=options.input_model,
                      gpu_ids=options.gpu_ids)
     elif options.eval:
         engine.deblur_image(restore_model=options.input_model,
