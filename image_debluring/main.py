@@ -2,6 +2,7 @@ import optparse
 
 from deblur_image import DeblurImageEngine
 from deblur_resnet import DeblurResnetModel
+from deblur_unet import DeblurUNetModel
 
 parser = optparse.OptionParser()
 
@@ -47,11 +48,22 @@ parser.add_option('-l', '--loss',
                   help="Supported losses: MSE",
                   default="MSE")
 
+parser.add_option('-a', '--arch',
+                  action="store",
+                  dest="arch",
+                  help="Supported models: Resnet, Unet",
+                  default=None)
+
 parser.add_option('-g', '--gpu_ids',
                   action="store",
                   dest="gpu_ids",
                   help="Use to specify GPU ids to use (ex. 0,1)",
                   default=None)
+
+models = {
+    'resnet': DeblurResnetModel,
+    'unet': DeblurUNetModel,
+}
 
 
 if __name__ == "__main__":
@@ -59,7 +71,13 @@ if __name__ == "__main__":
 
     h, w = 128, 128
 
-    engine = DeblurImageEngine(DeblurResnetModel, h, w)
+    if options.arch is None:
+        raise EnvironmentError("Please specify architecture to use via -a key")
+
+    if options.arch.lower() not in models:
+        raise EnvironmentError("{} is not supported!".format(options.arch))
+
+    engine = DeblurImageEngine(models[options.arch.lower()], h, w)
 
     if options.train:
         engine.train(dataset_dir=options.dataset_root,
