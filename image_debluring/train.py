@@ -110,7 +110,7 @@ def train(restore_model=None, epoch=0):
                 # Tensorboard logging
                 logging(logger, net, {'loss': epoch_loss, 'test': loss, 'ref_img': reference, 'outputs': outputs}, epoch)
             print(time.strftime("%H:%M:%S", time.gmtime(time.time() - start_trening_time)))
-        torch.save(net.state_dict(), './model-frozen-{}x{}-{}-{}'.format(self.wepoch))
+        torch.save(net.state_dict(), './model-frozen-{}x{}-{}-{}'.format(self.epoch))
         epoch += 1
 
 

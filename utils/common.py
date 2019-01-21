@@ -83,28 +83,28 @@ def logging(logger, net, data, step):
     #                        Tensorboard Logging                         #
     # ================================================================== #
 
-    if 'loss' in data.keys() and 'accuracy' in data.keys():
+    if 'loss' in data.keys() and 'test' in data.keys():
         # 1. Log scalar values (scalar summary)
-        info = {'loss': data['loss'], 'accuracy': data['accuracy']}
+        info = {'loss': data['loss'], 'test': data['test']}
 
         for tag, value in info.items():
-            logger.scalar_summary(tag, value, step + 1)
+            logger.scalar_summary(tag, value, step)
 
         # 2. Log values and gradients of the parameters (histogram summary)
         for tag, value in net.named_parameters():
             tag = tag.replace('.', '/')
-            logger.histo_summary(tag, value.data.cpu().numpy(), step + 1)
-            logger.histo_summary(tag + '/grad', value.grad.data.cpu().numpy(), step + 1)
+            logger.histo_summary(tag, value.data.cpu().numpy(), step)
+            logger.histo_summary(tag + '/grad', value.grad.data.cpu().numpy(), step)
 
     # 3. Log training images (image summary)
     info = {'outputs': data['outputs'].detach().cpu().numpy(),
             'ref_img': data['ref_img'].detach().cpu().numpy()
            }
-    
+
     for tag, images in info.items():
         id = 0
         for i in range(len(images)):
-            logger.image_summary("{}_{}".format(tag, id) , images, step + 1)
+            logger.image_summary("{}_{}".format(tag, id) , images, step)
             id += 1
 
 

@@ -102,7 +102,7 @@ class DeblurImageEngine:
         print(out_img_path)
         print("success")
 
-    def train(self, dataset_dir, loss_type, gpu_ids=None, restore_model=None, epoch=0):
+    def train(self, dataset_dir, loss_type, gpu_ids=None, restore_model=None, epoch=1):
         # Set loss function
         if loss_type not in self.loss_map:
             raise RuntimeError("Unregistred loss {}".format(loss_type))
@@ -189,7 +189,7 @@ class DeblurImageEngine:
                 epoch_loss += loss.item()
                 if i % 10 == 9:  # print every 100 mini-batches
                     elapsed_time = time.time() - start_time
-                    print('[%d, %5d] loss: %.3lf ' % (epoch + 1, i + 1, running_loss), end='')
+                    print('[%d, %5d] loss: %.3lf ' % (epoch, i + 1, running_loss), end='')
                     print(time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                     running_loss = 0.0
                     start_time = time.time()
@@ -210,11 +210,13 @@ class DeblurImageEngine:
                             loss += criterion(outputs, reference)
                     print('Loss of the network on the test dataset: %.3lf' % loss)
                     # print('\nLoss of the network on the ' + type + ' set with ' + str(total) + ' test images: %f' % loss)
-                    # Tensorboard logging
-                    logging(logger, net, {'loss': epoch_loss, 'test': loss, 'ref_img': reference, 'outputs': outputs},
+                    # TensorBoard logging
+                    logging(logger,
+                            net,
+                            {'loss': epoch_loss, 'test': loss, 'ref_img': reference, 'outputs': outputs},
                             epoch)
                 print(time.strftime("%H:%M:%S", time.gmtime(time.time() - start_training_time)))
-            torch.save(net.state_dict(), './model-frozen-{}x{}-{}-{}'.format(self.h, self.w, loss_type,epoch))
+            torch.save(net.state_dict(), './model-frozen-{}x{}-{}-{}'.format(self.h, self.w, loss_type, epoch))
             epoch += 1
 
         print('Finished Training')
