@@ -102,7 +102,7 @@ class DeblurImageEngine:
         print(out_img_path)
         print("success")
 
-    def train(self, dataset_dir, loss_type, gpu_ids=None, restore_model=None, epoch=1):
+    def train(self, dataset_dir, loss_type, gpu_ids=None, restore_model=None, epoch=1, pref="model"):
         # Set loss function
         if loss_type not in self.loss_map:
             raise RuntimeError("Unregistred loss {}".format(loss_type))
@@ -143,7 +143,7 @@ class DeblurImageEngine:
 
         net.to(device)
 
-        logger = Logger('./logs')
+        logger = Logger('./logs_{}'.format(pref))
 
         # Restore model if given
         if restore_model is not None:
@@ -156,7 +156,7 @@ class DeblurImageEngine:
 
         # Setup loss function
         # criterion = nn.MSELoss()
-        optimizer = torch.optim.Adam(net.parameters(), lr=5 * (1e-5))
+        optimizer = torch.optim.Adam(net.parameters(), lr=5 * (1e-6))
 
         # Start training
         last_accuracy = None
@@ -216,7 +216,7 @@ class DeblurImageEngine:
                             {'loss': epoch_loss, 'test': loss, 'ref_img': reference, 'outputs': outputs},
                             epoch)
                 print(time.strftime("%H:%M:%S", time.gmtime(time.time() - start_training_time)))
-            torch.save(net.state_dict(), './model-frozen-{}x{}-{}-{}'.format(self.h, self.w, loss_type, epoch))
+            torch.save(net.state_dict(), './{}-frozen-{}x{}-{}-{}'.format(pref, self.h, self.w, loss_type, epoch))
             epoch += 1
 
         print('Finished Training')

@@ -54,6 +54,12 @@ parser.add_option('-a', '--arch',
                   help="Supported models: Resnet, Unet",
                   default=None)
 
+parser.add_option('-n', '--name',
+                  action="store",
+                  dest="name",
+                  help="Specify model name",
+                  default="model")
+
 parser.add_option('-g', '--gpu_ids',
                   action="store",
                   dest="gpu_ids",
@@ -82,6 +88,7 @@ if __name__ == "__main__":
     if options.train:
         engine.train(dataset_dir=options.dataset_root,
                      loss_type=options.loss,
+                     pref=options.name,
                      restore_model=options.input_model,
                      gpu_ids=options.gpu_ids)
     elif options.eval:
