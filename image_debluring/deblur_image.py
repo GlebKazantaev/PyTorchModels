@@ -48,10 +48,12 @@ class DeblurImageEngine:
 
         epoch = restore_model.split('-')[-1]
         net = nn.DataParallel(net)
-        net.load_state_dict(torch.load(restore_model, map_location='cpu'))
+        net.load_state_dict(torch.load(restore_model))#, map_location='cpu'))
         print("Model {} was restored".format(restore_model))
 
         net.eval()
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        net.to(device)
 
         img = Image.open(img_path)
         if resize:
@@ -135,7 +137,7 @@ class DeblurImageEngine:
 
         # Use data parallel for multi GPU training
         if torch.cuda.device_count() > 1:
-            print("Let's use", torch.cuda.device_count(), "GPUs!")
+            print("There is ", torch.cuda.device_count(), "GPUs available!")
             if gpu_ids is not None:
                 net = nn.DataParallel(net, device_ids=gpu_ids)
             else:
@@ -150,13 +152,21 @@ class DeblurImageEngine:
             net.load_state_dict(torch.load(restore_model, map_location={'cuda:0': 'cpu'}))
             print("Model {} was restored".format(restore_model))
             try:
-                epoch = int(restore_model.split('-')[-1])
+                epoch = int(restore_model.split('-')[-1]) + 1
             except:
                 print("Cant extract epoch id from {} file! Will be used 0".format(restore_model))
 
         # Setup loss function
         # criterion = nn.MSELoss()
         optimizer = torch.optim.Adam(net.parameters(), lr=5 * (1e-6))
+
+        # Create dir for frozen models
+        import os
+        frozen_dir = './{}-frozen-{}x{}-{}'.format(pref, self.h, self.w, loss_type)
+        if os.path.exists(frozen_dir):
+            print("Path {} already exists".format(frozen_dir))
+        else:
+            os.makedirs(frozen_dir)
 
         # Start training
         last_accuracy = None
@@ -216,7 +226,7 @@ class DeblurImageEngine:
                             {'loss': epoch_loss, 'test': loss, 'ref_img': reference, 'outputs': outputs},
                             epoch)
                 print(time.strftime("%H:%M:%S", time.gmtime(time.time() - start_training_time)))
-            torch.save(net.state_dict(), './{}-frozen-{}x{}-{}-{}'.format(pref, self.h, self.w, loss_type, epoch))
+            torch.save(net.state_dict(), './{}/{}-frozen-{}x{}-{}-{}'.format(frozen_dir, pref, self.h, self.w, loss_type, epoch))
             epoch += 1
 
         print('Finished Training')
