@@ -2,7 +2,7 @@ import optparse
 
 from deblur_image import DeblurImageEngine
 from deblur_resnet import DeblurResnetModel
-from deblur_unet import DeblurUNetModel
+from deblur_unet import DeblurUNetReLU, DeblurUNetLeakyReLU, DeblurUNetPReLU
 
 parser = optparse.OptionParser()
 
@@ -51,7 +51,7 @@ parser.add_option('-l', '--loss',
 parser.add_option('-a', '--arch',
                   action="store",
                   dest="arch",
-                  help="Supported models: Resnet, Unet",
+                  help="Supported models: Resnet, UNetReLU, UNetLeakyReLU, UNetPReLU",
                   default=None)
 
 parser.add_option('-n', '--name',
@@ -68,7 +68,9 @@ parser.add_option('-g', '--gpu_ids',
 
 models = {
     'resnet': DeblurResnetModel,
-    'unet': DeblurUNetModel,
+    'unetrelu': DeblurUNetReLU,
+    'unetleakyrelu': DeblurUNetLeakyReLU,
+    'unetprelu': DeblurUNetPReLU
 }
 
 
