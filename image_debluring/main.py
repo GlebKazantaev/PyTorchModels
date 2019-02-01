@@ -66,6 +66,12 @@ parser.add_option('-g', '--gpu_ids',
                   help="Use to specify GPU ids to use (ex. 0,1)",
                   default=None)
 
+parser.add_option('-s', '--ssim',
+                  action="store_true",
+                  dest="ssim",
+                  help="Calculate SSIM metric for given test data",
+                  default=False)
+
 models = {
     'resnet': DeblurResnetModel,
     'unetrelu': DeblurUNetReLU,
@@ -97,5 +103,7 @@ if __name__ == "__main__":
         engine.deblur_image(restore_model=options.input_model,
                             img_path=options.input_image,
                             resize=not options.use_tiling)
+    elif options.ssim:
+        engine.calc_ssim(restore_model=options.input_model, dataset_dir=options.dataset_root)
     else:
         print("Unsupported keys!")

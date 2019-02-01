@@ -10,7 +10,8 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from common import Logger, logging
-from dataset import DeblurDataset
+from dataset import DeblurDataset, DeblurDatasetSSIM
+from pytorch_ssim import ssim
 
 
 class DeblurImageEngine:
@@ -36,6 +37,16 @@ class DeblurImageEngine:
         out_v = Variable(out, requires_grad=False).cpu()
         out_img = transforms.functional.to_pil_image(out_v)
         return out_img
+
+    def load_model(self, path_to_weights):
+        net = self.engine()
+
+        net = nn.DataParallel(net)
+        net.load_state_dict(torch.load(path_to_weights, map_location='cpu'))
+        net.to(self.device)
+        print("Model {} was restored".format(path_to_weights))
+
+        return net
 
     def deblur_image(self, restore_model, img_path, resize=False, sample_height=None, sample_width=None):
         if sample_height is None:
@@ -103,6 +114,40 @@ class DeblurImageEngine:
 
         print(out_img_path)
         print("success")
+
+    def calc_ssim(self, dataset_dir: str, restore_model: str, gpu_ids=None):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print("DEVICE WILL BE USED: ", self.device)
+
+        # Create our model
+        net = self.load_model(path_to_weights=restore_model)
+        net.eval()
+
+        dataset_train = DeblurDatasetSSIM(train=True, root_dir=dataset_dir, transform=transforms.Compose([
+            transforms.ToTensor()
+        ]), h=self.h, w=self.w)
+        train_dataloader = DataLoader(dataset_train, batch_size=1, shuffle=False, num_workers=1)
+
+        # dataset_test = DeblurDatasetSSIM(train=False, root_dir=dataset_dir, transform=transforms.Compose([
+        #     transforms.ToTensor()
+        # ]), h=self.h, w=self.w)
+        # test_dataloader = DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=1)
+        #
+        avg_ssim = 0
+        cnt = 0
+        for i, data in enumerate(train_dataloader, 0):
+            input, reference = data['image'].float(), data['reference'].float()
+            input = input.squeeze(1)
+            reference = reference.squeeze(1)
+            inputs, reference = input.to(self.device), reference.to(self.device)
+
+            output = net(inputs)
+            print(ssim(reference, output))
+            avg_ssim += ssim(reference, output)
+            cnt += 1
+
+        avg_ssim /= cnt
+        print("Average SSIM for training dataset: {}".format(avg_ssim))
 
     def train(self, dataset_dir, loss_type, gpu_ids=None, restore_model=None, epoch=1, pref="model"):
         # Set loss function
